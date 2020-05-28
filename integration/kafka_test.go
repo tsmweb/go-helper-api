@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/google/uuid"
+	"strings"
 	"testing"
 	"time"
 )
@@ -43,7 +44,11 @@ func TestKafka_SubscribeEvent(t *testing.T) {
 
 	fnCallback := func(event EventMessage, err error) {
 		if err != nil {
-			t.Errorf("SubscribeEvent error: %s", err)
+			if strings.Contains(err.Error(), "deadline exceeded") {
+				t.Logf("SubscribeEvent %s", err)
+			}  else {
+				t.Errorf("SubscribeEvent error: %s", err)
+			}
 		} else {
 			t.Log("--------------------------------------------------------")
 			t.Logf("[>] ID: %s", event.ID)
