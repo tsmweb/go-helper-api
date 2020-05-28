@@ -27,6 +27,11 @@ type Controller struct {
 	jwt *auth.JWT
 }
 
+// NewController returns an instance of the Controller.
+func NewController(jwt *auth.JWT) *Controller {
+	return &Controller{jwt}
+}
+
 // ExtractID extracts the JWT token id.
 func (c *Controller) ExtractID(r *http.Request) (string, error) {
 	ID, err := c.jwt.MapClaims(r, "sub") //sub = id
