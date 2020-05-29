@@ -53,7 +53,8 @@ func (f *Flow) Subscribe(onNext func(data interface{}), onError func(err error),
 	emitter := newEmitter()
 	done := make(chan struct{})
 
-	go func() {
+	go func(complete chan<- struct{}) {
+		loop:
 		for {
 			select {
 			case data, ok := <-emitter.data:
@@ -69,10 +70,11 @@ func (f *Flow) Subscribe(onNext func(data interface{}), onError func(err error),
 				close(emitter.err)
 
 				onComplete(ok)
-				done <- struct{}{}
+				complete <- struct{}{}
+				break loop
 			}
 		}
-	}()
+	}(done)
 
 	go func() {
 		f.subscribe(emitter)
