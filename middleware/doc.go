@@ -13,7 +13,7 @@ GZIP compress the http responses:
 
 Auth validates HTTP requests via token JWT:
 
-	var jwt *auth.JWT
+	var jwt auth.JWT
 	// ...
 
 	auth := middleware.NewAuth(jwt)

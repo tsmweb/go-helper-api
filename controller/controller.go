@@ -10,7 +10,7 @@ package controller
 
 import (
 	"encoding/json"
-	"github.com/tsmweb/helper-go/auth"
+	"github.com/tsmweb/go-helper-api/auth"
 	"mime"
 	"net/http"
 	"strings"
@@ -24,17 +24,17 @@ type Headers map[string]string
 
 // Controller base controller with utility methods.
 type Controller struct {
-	jwt *auth.JWT
+	jwt auth.JWT
 }
 
 // NewController returns an instance of the Controller.
-func NewController(jwt *auth.JWT) *Controller {
+func NewController(jwt auth.JWT) *Controller {
 	return &Controller{jwt}
 }
 
 // ExtractID extracts the JWT token id.
 func (c *Controller) ExtractID(r *http.Request) (string, error) {
-	ID, err := c.jwt.MapClaims(r, "sub") //sub = id
+	ID, err := c.jwt.GetDataToken(r, "id")
 	if err != nil || ID == nil {
 		return "", err
 	}

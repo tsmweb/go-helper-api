@@ -19,28 +19,34 @@ import (
 )
 
 // JWT uses JSON Web Token for generate and extract token.
-type JWT struct {
+type JWT interface {
+	GenerateToken(id string, exp int) (string, error)
+	ExtractToken(r *http.Request) (string, error)
+	GetDataToken(r *http.Request, key string) (interface{}, error)
+}
+
+type _jwt struct {
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
 }
 
 // NewJWT create new instance of JWT.
-func NewJWT(pathPrivateKey, pathPublicKey string) *JWT {
-	return &JWT{
+func NewJWT(pathPrivateKey, pathPublicKey string) JWT {
+	return &_jwt{
 		privateKey: privateKey(pathPrivateKey),
 		publicKey:  publicKey(pathPublicKey),
 	}
 }
 
 // GenerateToken generates a JWT token and returns the token in string format.
-func (a *JWT) GenerateToken(id string, exp int) (string, error) {
+func (j *_jwt) GenerateToken(id string, exp int) (string, error) {
 	token := jwt.New(jwt.SigningMethodRS512)
 	token.Claims = jwt.MapClaims{
 		"exp": time.Now().Add(time.Hour * time.Duration(exp)).Unix(),
 		"iat": time.Now().Unix(),
-		"sub": id,
+		"id": id,
 	}
-	tokenString, err := token.SignedString(a.privateKey)
+	tokenString, err := token.SignedString(j.privateKey)
 	if err != nil {
 		panic(err)
 		return "", err
@@ -49,29 +55,23 @@ func (a *JWT) GenerateToken(id string, exp int) (string, error) {
 	return tokenString, nil
 }
 
-// Token extracts the token from an HTTP Request.
-func (a *JWT) Token(r *http.Request) (*jwt.Token, error) {
-	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-		}
-
-		return a.publicKey, nil
-	})
+// ExtractToken extracts the token from an HTTP Request.
+func (j *_jwt) ExtractToken(r *http.Request) (string, error) {
+	t, err := j.token(r)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	if !token.Valid {
-		return nil, fmt.Errorf("Token invalid")
+	if !t.Valid {
+		return "", fmt.Errorf("Invalid token")
 	}
 
-	return token, nil
+	return t.Raw, nil
 }
 
 // MapClaims receives a key per parameter and extracts the corresponding token value.
-func (a *JWT) MapClaims(r *http.Request, key string) (interface{}, error) {
-	token, err := a.Token(r)
+func (j *_jwt) GetDataToken(r *http.Request, key string) (interface{}, error) {
+	token, err := j.token(r)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +82,30 @@ func (a *JWT) MapClaims(r *http.Request, key string) (interface{}, error) {
 	}
 
 	return nil, fmt.Errorf("Key not found")
+}
+
+// token extracts the token from an HTTP Request.
+func (j *_jwt) token(r *http.Request) (*jwt.Token, error) {
+	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, j.parseKeyfunc())
+	if err != nil {
+		return nil, err
+	}
+
+	if !token.Valid {
+		return nil, fmt.Errorf("Invalid token")
+	}
+
+	return token, nil
+}
+
+func (j *_jwt) parseKeyfunc() jwt.Keyfunc {
+	return func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+
+		return j.publicKey, nil
+	}
 }
 
 func privateKey(pathPrivateKey string) *rsa.PrivateKey {
