@@ -1,4 +1,4 @@
-package concurrent
+package flow
 
 import (
 	"errors"
@@ -111,7 +111,7 @@ func TestFlow_SubscribeParallel(t *testing.T) {
 var ErrDivisionByZero = errors.New("division by zero is not defined")
 
 func div(a, b int) *Flow {
-	return NewFlow(func(emitter Emitter) {
+	return New(func(emitter Emitter) {
 		if b == 0 {
 			emitter.OnError(ErrDivisionByZero)
 			return

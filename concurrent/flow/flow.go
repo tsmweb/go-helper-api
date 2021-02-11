@@ -1,10 +1,10 @@
 /*
-Package concurrent provides a Flow implementation to perform background processing
+Package flow provides a Flow implementation to perform background processing
 and notify your subscribers through an Emitter.
 
 Create a new instance of Flow, example:
 
-	flow := concurrent.NewFlow(func(emitter concurrent.Emitter) {
+	flw := flow.New(func(emitter concurrent.Emitter) {
 		// ...
 		result, err := repository.Get(id)
 		if err != nil {
@@ -18,7 +18,7 @@ Create a new instance of Flow, example:
 
 Subscribing to a Flow (Safe Concurrency), example:
 
-	flow.SubscribeEvent(
+	flw.SubscribeEvent(
 		func(data interface) {
 			// OnNext
 			// ...
@@ -34,15 +34,15 @@ Subscribing to a Flow (Safe Concurrency), example:
 		})
 
 */
-package concurrent
+package flow
 
 // Flow performs background processing and notifies your subscribers via an Emitter.
 type Flow struct {
 	subscribe func(emitter Emitter)
 }
 
-// NewFlow create new instance of Flow.
-func NewFlow(onSubscribe func(emitter Emitter)) *Flow {
+// New create new instance of Flow.
+func New(onSubscribe func(emitter Emitter)) *Flow {
 	return &Flow{ subscribe: onSubscribe }
 }
 

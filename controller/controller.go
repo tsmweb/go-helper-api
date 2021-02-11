@@ -27,8 +27,8 @@ type Controller struct {
 	jwt auth.JWT
 }
 
-// NewController returns an instance of the Controller.
-func NewController(jwt auth.JWT) *Controller {
+// New returns an instance of the Controller.
+func New(jwt auth.JWT) *Controller {
 	return &Controller{jwt}
 }
 
