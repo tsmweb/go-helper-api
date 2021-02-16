@@ -1,7 +1,8 @@
 /*
-Package integration provides a custom Kafka wrapper to work with the outbox pattern.
+Package integration is a simple wrapper for the kafka-go segmentio library, providing tools
+for consuming and producing events and working with the event outbox pattern.
 
-Send a event to a kafka topic:
+Send a outbox event to a kafka topic:
 
 	profile := profile{
 		ID:       "123",
@@ -11,7 +12,7 @@ Send a event to a kafka topic:
 
 	// newClientCreateEvent return *profileCreateEvent which implements the ExportedEvent interface.
 	profileCreateEvent := newClientCreateEvent(profile)
-	event := integration.BuildEventMessage(profileCreateEvent)
+	event := integration.BuildOutboxEvent(profileCreateEvent)
 
 	kafka := integration.NewKafka([]string{"localhost:9091", "localhost:9092", "localhost:9093"}, "profile")
 	kafka.Debug(true)
@@ -19,11 +20,11 @@ Send a event to a kafka topic:
 
 	defer writer.Close()
 
-	err := kafka.SendEvent(context.Background(), writer, event)
+	err := writer.SendOutboxEvent(context.Background(), event)
 	if err != nil {
 	// ...
 
-Consume event from a kafka topic:
+Consume outbox event from a kafka topic:
 
 	kafka := integration.NewKafka([]string{"localhost:9091", "localhost:9092", "localhost:9093"}, "profile")
 	kafka.Debug(true)
@@ -33,24 +34,22 @@ Consume event from a kafka topic:
 
 	ctx := context.Background()
 
-	fnCallback := func(event EventMessage, err error) {
+	fnCallback := func(event *OutboxEvent, err error) {
 		// ...
 	}
 
-	kafka.SubscribeEvent(ctx, reader, fnCallback)
+	reader.SubscribeOutboxEvent(ctx, fnCallback)
 	// ...
- */
+*/
 package integration
 
 import (
-	"context"
 	"github.com/segmentio/kafka-go"
-	"github.com/segmentio/kafka-go/snappy"
-	"log"
 	"time"
 )
 
-// Kafka is a custom Kafka wrapper to work with the outbox pattern.
+// Kafka is a simple wrapper for the kafka-go segmentio library, providing tools
+// for consuming and producing events and working with the event outbox pattern.
 type Kafka struct {
 	kafkaBrokerUrls []string
 	clientId        string
@@ -58,7 +57,7 @@ type Kafka struct {
 }
 
 // NewKafka creates a new Kafka instance taking as an parameter an array of
-// kafka brokers and the profile ID.
+// kafka brokers and the client ID.
 func NewKafka(kafkaBrokerUrls []string, clientId string) *Kafka {
 	return &Kafka{
 		kafkaBrokerUrls: kafkaBrokerUrls,
@@ -67,126 +66,44 @@ func NewKafka(kafkaBrokerUrls []string, clientId string) *Kafka {
 	}
 }
 
-// Debug enables logging of incoming messages.
+// Debug enables logging of incoming events.
 func (k *Kafka) Debug(debug bool) {
 	k.debug = debug
 }
 
 func (k *Kafka) dialer() *kafka.Dialer {
 	return &kafka.Dialer{
-		ClientID: k.clientId,
-		Timeout:  10 * time.Second,
+		ClientID:  k.clientId,
+		DualStack: true,
+		Timeout:   10 * time.Second,
 	}
 }
 
-// NewWriter creates a new kafka.Writer to write messages on a topic.
-func (k *Kafka) NewWriter(topic string) *kafka.Writer {
-	config := kafka.WriterConfig{
-		Brokers:          k.kafkaBrokerUrls,
-		Topic:            topic,
-		Balancer:         &kafka.Hash{},
-		Dialer:           k.dialer(),
-		RequiredAcks:     -1,
-		WriteTimeout:     10 * time.Second,
-		ReadTimeout:      10 * time.Second,
-		CompressionCodec: snappy.NewCompressionCodec(),
+// NewWriter creates a new Writer to produce events on a topic.
+func (k *Kafka) NewWriter(topic string) *Writer {
+	w := &kafka.Writer{
+		Addr:         kafka.TCP(k.kafkaBrokerUrls...),
+		Topic:        topic,
+		RequiredAcks: kafka.RequireAll,
+		BatchTimeout: time.Millisecond,
+		Compression:  kafka.Snappy,
 	}
-
-	w := kafka.NewWriter(config)
-	return w
+	return newWriter(w)
 }
 
-// SendEvent produces and sends an event message for a kafka topic.
-// The context passed as first argument may also be used to asynchronously
-// cancel the operation.
-func (k *Kafka) SendEvent(ctx context.Context, writer *kafka.Writer, event EventMessage) error {
-	headers := []kafka.Header{
-		{Key: "id", Value: []byte(event.ID)},
-		{Key: "eventType", Value: []byte(event.Type)},
-	}
-
-	message := kafka.Message{
-		Key:     []byte(event.AggregateID),
-		Value:   event.Payload,
-		Headers: headers,
-		Time:    time.Time{},
-	}
-
-	err := writer.WriteMessages(ctx, message)
-	return err
-}
-
-// NewReader creates a new kafka.Reader to read messages for a topic.
-func (k *Kafka) NewReader(groupID, topic string) *kafka.Reader {
+// NewReader creates a new Reader to consume events from a topic.
+func (k *Kafka) NewReader(groupID, topic string) *Reader {
 	config := kafka.ReaderConfig{
 		Brokers:         k.kafkaBrokerUrls,
 		GroupID:         groupID,
 		Topic:           topic,
 		Dialer:          k.dialer(),
-		MinBytes:        10e3,            // 10KB
-		MaxBytes:        10e6,            // 10MB
-		MaxWait:         1 * time.Second, // Maximum amount of time to wait for new data to come when fetching batches of messages from kafka.
+		MinBytes:        10e3,        // 10KB
+		MaxBytes:        10e6,        // 10MB
+		MaxWait:         time.Second, // Maximum amount of time to wait for new data to come when fetching batches of messages from kafka.
 		ReadLagInterval: -1,
+		//CommitInterval: time.Second, // flushes commits to KafkaWrap every second
 	}
-
-	reader := kafka.NewReader(config)
-	return reader
-}
-
-// SubscribeEvent consumes the events of a topic and passes the events to the
-// informed callback function. The method call blocks until an error occurs.
-// The program may also specify a context to asynchronously cancel the blocking operation.
-func (k *Kafka) SubscribeEvent(ctx context.Context, reader *kafka.Reader, callback func(event EventMessage, err error)) {
-	for {
-		m, err := reader.ReadMessage(ctx)
-		if err != nil {
-			callback(EventMessage{}, err)
-			break
-		}
-
-		if k.debug {
-			k.logMessage(m)
-		}
-
-		callback(k.makeEventMessage(m), nil)
-	}
-}
-
-func (k *Kafka) makeEventMessage(m kafka.Message) EventMessage {
-	headerMap := k.sliceToMap(m.Headers)
-
-	id, ok := headerMap["id"]
-	if !ok {
-		id = "0"
-	}
-
-	eventType, ok := headerMap["eventType"]
-	if !ok {
-		eventType = "*"
-	}
-
-	event := EventMessage{
-		ID:            id,
-		AggregateID:   string(m.Key),
-		AggregateType: m.Topic,
-		Type:          eventType,
-		Payload:       m.Value,
-	}
-
-	return event
-}
-
-func (k *Kafka) sliceToMap(sh []kafka.Header) map[string]string {
-	headerMap := make(map[string]string)
-
-	for _, v := range sh {
-		headerMap[v.Key] = string(v.Value)
-	}
-
-	return headerMap
-}
-
-func (k *Kafka) logMessage(m kafka.Message) {
-	log.Printf("[>] ReadMessage - TIME: %s | TOPIC: %s | PARTITION: %d | OFFSET: %d | HEADER: %s | SIZE PAYLOAD: %d\n",
-		m.Time, m.Topic, m.Partition, m.Offset, m.Headers, len(m.Value))
+	r := kafka.NewReader(config)
+	return newReader(r, k.debug)
 }

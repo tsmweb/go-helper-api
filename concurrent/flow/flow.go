@@ -18,7 +18,7 @@ Create a new instance of Flow, example:
 
 Subscribing to a Flow (Safe Concurrency), example:
 
-	flw.SubscribeEvent(
+	flw.SubscribeOutboxEvent(
 		func(data interface) {
 			// OnNext
 			// ...
@@ -46,7 +46,7 @@ func New(onSubscribe func(emitter Emitter)) *Flow {
 	return &Flow{ subscribe: onSubscribe }
 }
 
-// SubscribeEvent records callbacks for onNext, onError and onComplete.
+// SubscribeOutboxEvent records callbacks for onNext, onError and onComplete.
 // When subscribing to a Flow, processing is performed in the background and callbacks are notified via signals.
 // Safe Concurrency.
 func (f *Flow) Subscribe(onNext func(data interface{}), onError func(err error), onComplete func(ok bool)) {
