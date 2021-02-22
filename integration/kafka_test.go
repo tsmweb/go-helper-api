@@ -37,7 +37,7 @@ func TestReader_SubscribeTopic(t *testing.T) {
 	reader := kafka.NewReader("ProfileSubscribeTest", "profile")
 	defer reader.Close()
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	fnCallback := func(event *Event, err error) {
 		if err != nil {
 			if strings.Contains(err.Error(), "deadline exceeded") {
@@ -87,7 +87,7 @@ func TestReader_SubscribeEvent(t *testing.T) {
 	reader := kafka.NewReader("ProfileSubscribeTest", "profile_event")
 	defer reader.Close()
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	//ctx := context.Background()
 
 	fnCallback := func(event *OutboxEvent, err error) {
