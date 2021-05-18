@@ -33,9 +33,6 @@ import (
 	"sync"
 )
 
-// Job type executed on workers of the executor.
-type Job func(ctx context.Context)
-
 // Executor contains logic for goroutine execution.
 type Executor struct {
 	sema chan struct{}
@@ -67,7 +64,7 @@ func New(size int) *Executor {
 }
 
 // Schedule schedules the work to be performed on the executors.
-func (e *Executor) Schedule(job Job) error {
+func (e *Executor) Schedule(job func(ctx context.Context)) error {
 	if e.IsTerminated() {
 		return errors.New("executor terminated")
 	}
@@ -99,7 +96,7 @@ func (e *Executor) IsTerminated() bool {
 	}
 }
 
-func (e *Executor) worker(job Job) {
+func (e *Executor) worker(job func(ctx context.Context)) {
 	done := make(chan struct{})
 	e.wg.Add(1)
 
