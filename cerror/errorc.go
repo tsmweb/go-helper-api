@@ -10,13 +10,12 @@ import (
 	"net/http"
 )
 
-var ErrBadRequest = errors.New(http.StatusText(http.StatusBadRequest))
-
-var ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
-
-var ErrInternalServer = errors.New(http.StatusText(http.StatusInternalServerError))
-
-var ErrUnauthorized = errors.New(http.StatusText(http.StatusUnauthorized))
+var (
+	ErrBadRequest = errors.New(http.StatusText(http.StatusBadRequest))
+	ErrNotFound = errors.New(http.StatusText(http.StatusNotFound))
+	ErrInternalServer = errors.New(http.StatusText(http.StatusInternalServerError))
+	ErrUnauthorized = errors.New(http.StatusText(http.StatusUnauthorized))
+)
 
 // ErrValidateModel error issued when validating a model's fields.
 type ErrValidateModel struct {
