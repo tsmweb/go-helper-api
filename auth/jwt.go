@@ -14,8 +14,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/dgrijalva/jwt-go/request"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v4/request"
 )
 
 // JWT uses JSON Web Token for generate and extract token.
@@ -63,7 +63,7 @@ func (j *_jwt) ExtractToken(r *http.Request) (string, error) {
 	}
 
 	if !t.Valid {
-		return "", fmt.Errorf("Invalid token")
+		return "", fmt.Errorf("invalid token")
 	}
 
 	return t.Raw, nil
@@ -81,7 +81,7 @@ func (j *_jwt) GetDataToken(r *http.Request, key string) (interface{}, error) {
 		return claims[key], nil
 	}
 
-	return nil, fmt.Errorf("Key not found")
+	return nil, fmt.Errorf("key not found")
 }
 
 // token extracts the token from an HTTP Request.
@@ -92,7 +92,7 @@ func (j *_jwt) token(r *http.Request) (*jwt.Token, error) {
 	}
 
 	if !token.Valid {
-		return nil, fmt.Errorf("Invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 
 	return token, nil
@@ -101,7 +101,7 @@ func (j *_jwt) token(r *http.Request) (*jwt.Token, error) {
 func (j *_jwt) parseKeyfunc() jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 
 		return j.publicKey, nil
