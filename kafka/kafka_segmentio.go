@@ -41,7 +41,7 @@ func (k *kafka) NewProducer(topic string) Producer {
 	w := &skafka.Writer{
 		Addr:         skafka.TCP(k.kafkaBrokerUrls...),
 		Topic:        topic,
-		RequiredAcks: skafka.RequireAll,
+		RequiredAcks: skafka.RequireOne,
 		BatchTimeout: time.Millisecond,
 		Compression:  skafka.Snappy,
 	}
@@ -77,12 +77,18 @@ func newProducer(w *skafka.Writer) Producer {
 // Publish produces and sends an event for a kafka topic.
 // The context passed as first argument may also be used to asynchronously
 // cancel the operation.
-func (p *producer) Publish(ctx context.Context, key, value []byte) error {
-	message := skafka.Message{
-		Key: key,
-		Value: value,
+func (p *producer) Publish(ctx context.Context, key []byte, values ...[]byte) error {
+	var messages []skafka.Message
+
+	for _, value := range values {
+		message := skafka.Message{
+			Key: key,
+			Value: value,
+		}
+		messages = append(messages, message)
 	}
-	return p.writer.WriteMessages(ctx, message)
+
+	return p.writer.WriteMessages(ctx, messages...)
 }
 
 // Close flushes pending writes, and waits for all writes to complete before

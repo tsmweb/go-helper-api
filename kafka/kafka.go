@@ -73,7 +73,7 @@ type Producer interface {
 	// Publish produces and sends an event for a kafka topic.
 	// The context passed as first argument may also be used to asynchronously
 	// cancel the operation.
-	Publish(ctx context.Context, key, value []byte) error
+	Publish(ctx context.Context, key []byte, values ...[]byte) error
 
 	// Close flushes pending writes, and waits for all writes to complete before
 	// returning.
