@@ -52,7 +52,6 @@ func (k *kafka) NewProducer(topic string) Producer {
 func (k *kafka) NewConsumer(groupID, topic string) Consumer {
 	config := skafka.ReaderConfig{
 		Brokers:         k.kafkaBrokerUrls,
-		GroupID:         groupID,
 		Topic:           topic,
 		Dialer:          k.dialer(),
 		MinBytes:        5,
@@ -61,6 +60,10 @@ func (k *kafka) NewConsumer(groupID, topic string) Consumer {
 		ReadLagInterval: -1,
 		//CommitInterval: time.Second, // flushes commits to KafkaWrap every second
 	}
+	if groupID != "-1" {
+		config.GroupID = groupID
+	}
+
 	r := skafka.NewReader(config)
 	return newConsumer(r, k.debug)
 }
