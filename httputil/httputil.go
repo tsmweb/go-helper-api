@@ -25,6 +25,12 @@ const (
 	// MimeImageJPEG represents the MimeType "image/jpeg".
 	MimeImageJPEG
 
+	// MimeImagePNG represents the MimeType "image/png".
+	MimeImagePNG
+
+	// MimeVideoMP4 represents the MimeType "video/mp4".
+	MimeVideoMP4
+
 	// MimeTextPlain represents the MimeType "text/plain".
 	MimeTextPlain
 )
@@ -34,6 +40,8 @@ var mimeTypeText = map[MimeType]string{
 	MimeApplicationPDF:         "application/pdf",
 	MimeApplicationOctetStream: "application/octet-stream",
 	MimeImageJPEG:              "image/jpeg",
+	MimeImagePNG:               "image/png",
+	MimeVideoMP4:               "video/mp4",
 	MimeTextPlain:              "text/plain",
 }
 
