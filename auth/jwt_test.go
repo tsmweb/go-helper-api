@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 )
@@ -11,8 +12,11 @@ const (
 )
 
 func TestJWT_GenerateToken(t *testing.T) {
+	payload := map[string]interface{} {
+		"id": 123456,
+	}
 	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
-	token, err := jwt.GenerateToken("+5511999999999", 1)
+	token, err := jwt.GenerateToken(payload, 1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -21,8 +25,11 @@ func TestJWT_GenerateToken(t *testing.T) {
 }
 
 func TestJWT_ExtractToken(t *testing.T) {
+	payload := map[string]interface{} {
+		"id": 123456,
+	}
 	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
-	token, err := jwt.GenerateToken("+5511999999999", 1)
+	token, err := jwt.GenerateToken(payload, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,8 +52,13 @@ func TestJWT_ExtractToken(t *testing.T) {
 }
 
 func TestJWT_GetDataToken(t *testing.T) {
+	payload := map[string]interface{} {
+		"id": 123456,
+		"admin": true,
+		"dir": "user.test",
+	}
 	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
-	token, err := jwt.GenerateToken("+5511999999999", 1)
+	token, err := jwt.GenerateToken(payload, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,12 +68,23 @@ func TestJWT_GetDataToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d, err := jwt.GetDataToken(req, "id")
+	id, err := jwt.GetDataToken(req, "id")
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log(id)
 
-	t.Log(d)
+	admin, err := jwt.GetDataToken(req, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(admin)
+
+	dir, err := jwt.GetDataToken(req, "dir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(dir)
 }
 
 func makeRequest(token string) (*http.Request, error) {
@@ -69,7 +92,7 @@ func makeRequest(token string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", token)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	return req, nil
 }

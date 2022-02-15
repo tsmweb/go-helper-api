@@ -20,7 +20,7 @@ import (
 
 // JWT uses JSON Web Token for generate and extract token.
 type JWT interface {
-	GenerateToken(id string, exp int) (string, error)
+	GenerateToken(payload map[string]interface{}, exp int) (string, error)
 	ExtractToken(r *http.Request) (string, error)
 	GetDataToken(r *http.Request, key string) (interface{}, error)
 }
@@ -39,13 +39,21 @@ func NewJWT(pathPrivateKey, pathPublicKey string) JWT {
 }
 
 // GenerateToken generates a JWT token and returns the token in string format.
-func (j *_jwt) GenerateToken(id string, exp int) (string, error) {
+func (j *_jwt) GenerateToken(payload map[string]interface{}, exp int) (string, error) {
 	token := jwt.New(jwt.SigningMethodRS512)
-	token.Claims = jwt.MapClaims{
+	mapClaims := jwt.MapClaims{
 		"exp": time.Now().Add(time.Hour * time.Duration(exp)).Unix(),
 		"iat": time.Now().Unix(),
-		"id": id,
 	}
+
+	if payload == nil || len(payload) == 0 {
+		return "", fmt.Errorf("invalid payload")
+	}
+	for k, v := range payload {
+		mapClaims[k] = v
+	}
+
+	token.Claims = mapClaims
 	tokenString, err := token.SignedString(j.privateKey)
 	if err != nil {
 		panic(err)

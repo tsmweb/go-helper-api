@@ -28,6 +28,9 @@ const (
 	// MimeImagePNG represents the MimeType "image/png".
 	MimeImagePNG
 
+	// MimeAudioMP3 represents the MimeType "audio/mpeg".
+	MimeAudioMP3
+
 	// MimeVideoMP4 represents the MimeType "video/mp4".
 	MimeVideoMP4
 
@@ -41,6 +44,7 @@ var mimeTypeText = map[MimeType]string{
 	MimeApplicationOctetStream: "application/octet-stream",
 	MimeImageJPEG:              "image/jpeg",
 	MimeImagePNG:               "image/png",
+	MimeAudioMP3:               "audio/mpeg",
 	MimeVideoMP4:               "video/mp4",
 	MimeTextPlain:              "text/plain",
 }
