@@ -1,7 +1,7 @@
 /*
 Package auth provides authentication and authorization methods using JSON Web Tokens.
 
- */
+*/
 package auth
 
 import (
@@ -32,9 +32,19 @@ type _jwt struct {
 
 // NewJWT create new instance of JWT.
 func NewJWT(pathPrivateKey, pathPublicKey string) JWT {
+	_privateKey, err := privateKey(pathPrivateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	_publicKey, err := publicKey(pathPublicKey)
+	if err != nil {
+		panic(err)
+	}
+
 	return &_jwt{
-		privateKey: privateKey(pathPrivateKey),
-		publicKey:  publicKey(pathPublicKey),
+		privateKey: _privateKey,
+		publicKey:  _publicKey,
 	}
 }
 
@@ -77,7 +87,7 @@ func (j *_jwt) ExtractToken(r *http.Request) (string, error) {
 	return t.Raw, nil
 }
 
-// MapClaims receives a key per parameter and extracts the corresponding token value.
+// GetDataToken receives a key per parameter and extracts the corresponding token value.
 func (j *_jwt) GetDataToken(r *http.Request, key string) (interface{}, error) {
 	token, err := j.token(r)
 	if err != nil {
@@ -94,7 +104,7 @@ func (j *_jwt) GetDataToken(r *http.Request, key string) (interface{}, error) {
 
 // token extracts the token from an HTTP Request.
 func (j *_jwt) token(r *http.Request) (*jwt.Token, error) {
-	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, j.parseKeyfunc())
+	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, j.parseKeyFunc())
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +116,7 @@ func (j *_jwt) token(r *http.Request) (*jwt.Token, error) {
 	return token, nil
 }
 
-func (j *_jwt) parseKeyfunc() jwt.Keyfunc {
+func (j *_jwt) parseKeyFunc() jwt.Keyfunc {
 	return func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -116,51 +126,86 @@ func (j *_jwt) parseKeyfunc() jwt.Keyfunc {
 	}
 }
 
-func privateKey(pathPrivateKey string) *rsa.PrivateKey {
+func privateKey(pathPrivateKey string) (*rsa.PrivateKey, error) {
 	privateKeyFile, err := os.Open(pathPrivateKey)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	pemFileInfo, _ := privateKeyFile.Stat()
+	pemFileInfo, err := privateKeyFile.Stat()
+	if err != nil {
+		return nil, err
+	}
+
 	size := pemFileInfo.Size()
 	pemBytes := make([]byte, size)
 	buffer := bufio.NewReader(privateKeyFile)
 	_, err = buffer.Read(pemBytes)
-	data, _ := pem.Decode(pemBytes)
-	privateKeyFile.Close()
-
-	privateKeyImported, err := x509.ParsePKCS1PrivateKey(data.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return privateKeyImported
+	data, _ := pem.Decode(pemBytes)
+	if err = privateKeyFile.Close(); err != nil {
+		return nil, err
+	}
+
+	privatePKCS1Key, errPKCS1 := x509.ParsePKCS1PrivateKey(data.Bytes)
+	if errPKCS1 == nil {
+		return privatePKCS1Key, nil
+	}
+
+	privatePKCS8Key, errPKCS8 := x509.ParsePKCS8PrivateKey(data.Bytes)
+	if errPKCS8 == nil {
+		privatePKCS8RsaKey, ok := privatePKCS8Key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("PKCS8 contained non-RSA key. Expected RSA key")
+		}
+		return privatePKCS8RsaKey, nil
+	}
+
+	return nil, fmt.Errorf("failed to parse private key as PKCS#1 or PKCS#8. (%s). (%s)",
+		errPKCS1, errPKCS8)
 }
 
-func publicKey(pathPublicKey string) *rsa.PublicKey {
+func publicKey(pathPublicKey string) (*rsa.PublicKey, error) {
 	publicKeyFile, err := os.Open(pathPublicKey)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	pemFileInfo, _ := publicKeyFile.Stat()
+	pemFileInfo, err := publicKeyFile.Stat()
+	if err != nil {
+		return nil, err
+	}
+
 	size := pemFileInfo.Size()
 	pemBytes := make([]byte, size)
 	buffer := bufio.NewReader(publicKeyFile)
 	_, err = buffer.Read(pemBytes)
-	data, _ := pem.Decode(pemBytes)
-	publicKeyFile.Close()
-
-	publicKeyImported, err := x509.ParsePKIXPublicKey(data.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	rsaPub, ok := publicKeyImported.(*rsa.PublicKey)
-	if !ok {
-		panic(err)
+	data, _ := pem.Decode(pemBytes)
+	if err = publicKeyFile.Close(); err != nil {
+		return nil, err
 	}
 
-	return rsaPub
+	publicPKIXKey, errPKIX := x509.ParsePKIXPublicKey(data.Bytes)
+	if errPKIX == nil {
+		rsaPub, ok := publicPKIXKey.(*rsa.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("PKIX contained non-RSA key. Expected RSA key")
+		}
+		return rsaPub, nil
+	}
+
+	publicPKCS1Key, errPKCS1 := x509.ParsePKCS1PublicKey(data.Bytes)
+	if errPKCS1 == nil {
+		return publicPKCS1Key, nil
+	}
+
+	return nil, fmt.Errorf("failed to parse public key as PKIX or PKCS#1. (%s). (%s)",
+		errPKIX, errPKCS1)
 }

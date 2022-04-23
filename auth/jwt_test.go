@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	_pathPrivateKey = "keys/private-key"
-	_pathPublicKey  = "keys/public-key.pub"
+	_pathPrivateKey = "keys/localhost-key.pem"
+	_pathPublicKey  = "keys/localhost-pub.pem"
 )
 
 func TestJWT_GenerateToken(t *testing.T) {
-	payload := map[string]interface{} {
+	payload := map[string]interface{}{
 		"id": 123456,
 	}
 	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
@@ -25,7 +25,7 @@ func TestJWT_GenerateToken(t *testing.T) {
 }
 
 func TestJWT_ExtractToken(t *testing.T) {
-	payload := map[string]interface{} {
+	payload := map[string]interface{}{
 		"id": 123456,
 	}
 	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
@@ -52,10 +52,10 @@ func TestJWT_ExtractToken(t *testing.T) {
 }
 
 func TestJWT_GetDataToken(t *testing.T) {
-	payload := map[string]interface{} {
-		"id": 123456,
+	payload := map[string]interface{}{
+		"id":    123456,
 		"admin": true,
-		"dir": "user.test",
+		"dir":   "user.test",
 	}
 	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
 	token, err := jwt.GenerateToken(payload, 1)
