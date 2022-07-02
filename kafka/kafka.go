@@ -2,7 +2,7 @@
 Package kafka is a simple wrapper for the kafka-go segmentio library, providing tools
 for consuming and producing events.
 
-Send a event to a kafka topic:
+Send an event to a kafka topic:
 
 	p := profile{
 		ID:       "123",

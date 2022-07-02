@@ -1,16 +1,32 @@
-package eventlog
+/*
+Package event implements routines to produce event log for a topic in Apache Kafka.
+
+Send an event log to a kafka topic:
+
+	err := event.Init(context.Background(), []string{"localhost:9094"}, "CLIENT_ID", "TOPIC_NAME")
+	if err != nil {
+	// ...
+	defer event.Close()
+
+	e := event.New("localhost", "user", "New User", "New user added to the database")
+
+	if err = event.Send(e); err != nil {
+	// ...
+*/
+
+package event
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/tsmweb/go-helper-api/kafka"
 	"log"
 	"sync"
 	"time"
 )
 
+// Event structure represents an event log.
 type Event struct {
 	Host      string `json:"host"`
 	User      string `json:"user,omitempty"`
@@ -19,7 +35,8 @@ type Event struct {
 	Timestamp string `json:"timestamp"`
 }
 
-func NewEvent(host, user, title, detail string) *Event {
+// New creates an Event instance.
+func New(host, user, title, detail string) *Event {
 	return &Event{
 		Host:      host,
 		User:      user,
@@ -29,12 +46,7 @@ func NewEvent(host, user, title, detail string) *Event {
 	}
 }
 
-func (e Event) Print() {
-	fmt.Printf("[%v] TITLE [%s] | HOST [%s] | USER [%s] | DETAIL [%s]\n",
-		e.Timestamp, e.Title, e.Host, e.User, e.Detail)
-}
-
-func (e Event) ToJSON() []byte {
+func (e Event) toJSON() []byte {
 	b, err := json.Marshal(e)
 	if err != nil {
 		return nil
@@ -52,6 +64,7 @@ var (
 	ErrRunning = errors.New("is already running")
 )
 
+// Init creates a new producer for Apache Kafka and initializes the routines for sending events.
 func Init(ctx context.Context, brokerUrls []string, clientID string, topic string) error {
 	mu.RLock()
 	if running {
@@ -69,7 +82,7 @@ func Init(ctx context.Context, brokerUrls []string, clientID string, topic strin
 		defer wg.Done()
 
 		for event := range chEvent {
-			if err := producer.Publish(ctx, []byte(event.Host), event.ToJSON()); err != nil {
+			if err := producer.Publish(ctx, []byte(event.Host), event.toJSON()); err != nil {
 				log.Printf("eventlog.Send() \nError: %v\n", err.Error())
 			}
 		}
@@ -80,6 +93,7 @@ func Init(ctx context.Context, brokerUrls []string, clientID string, topic strin
 	return nil
 }
 
+// Close closes the event communication channel and the Apache Kafka producer.
 func Close() {
 	mu.Lock()
 	defer mu.Unlock()
@@ -91,6 +105,7 @@ func Close() {
 	}
 }
 
+// Send sends the event to the Apache Kafka topic.
 func Send(event *Event) error {
 	mu.RLock()
 	defer mu.RUnlock()
