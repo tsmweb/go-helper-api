@@ -1,25 +1,42 @@
 package event
 
 import (
-	"context"
 	"errors"
+	"github.com/stretchr/testify/mock"
+	kafka "github.com/tsmweb/go-helper-api/observability/internal/mock"
 	"testing"
 )
 
-func Test_Init(t *testing.T) {
-	err := Init(context.Background(), []string{"localhost:9094"}, "CLIENT_ID", "TOPIC_NAME")
+func TestEvent_Init(t *testing.T) {
+	producer := new(kafka.Producer)
+	producer.On("Publish", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil).
+		Run(func(args mock.Arguments) {
+			t.Log(string((args[2].([][]byte))[0]))
+		})
+	producer.On("Close")
+
+	err := Init(producer)
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = Init(context.Background(), []string{"localhost:9094"}, "CLIENT_ID", "TOPIC_NAME")
+	err = Init(producer)
 	if err != nil && errors.Is(err, ErrRunning) {
 		t.Log(err.Error())
 	}
 }
 
-func Test_Send(t *testing.T) {
-	err := Init(context.Background(), []string{"localhost:9094"}, "CLIENT_ID", "TOPIC_NAME")
+func TestEvent_Send(t *testing.T) {
+	producer := new(kafka.Producer)
+	producer.On("Publish", mock.Anything, mock.Anything, mock.Anything).
+		Return(nil).
+		Run(func(args mock.Arguments) {
+			t.Log(string((args[2].([][]byte))[0]))
+		})
+	producer.On("Close")
+
+	err := Init(producer)
 	if err != nil {
 		t.Error(err)
 	}

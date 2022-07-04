@@ -3,7 +3,8 @@ Package event implements routines to produce event log for a topic in Apache Kaf
 
 Send an event log to a kafka topic:
 
-	err := event.Init(context.Background(), []string{"localhost:9094"}, "CLIENT_ID", "TOPIC_NAME")
+	producer := kafka.New([]string{"localhost:9094"}, "CLIENT_ID").NewProducer("TOPIC_NAME")
+	err := event.Init(producer)
 	if err != nil {
 	// ...
 	defer event.Close()
@@ -20,8 +21,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/tsmweb/go-helper-api/kafka"
-	"log"
+	"os"
 	"sync"
 	"time"
 )
@@ -53,11 +55,6 @@ var eventTypeText = map[EventType]string{
 // String return the name of the eventType.
 func (e EventType) String() string {
 	return eventTypeText[e]
-}
-
-// EventTypeText return the name of the eventType.
-func EventTypeText(code EventType) string {
-	return code.String()
 }
 
 // Event structure represents an event log.
@@ -101,7 +98,7 @@ var (
 )
 
 // Init creates a new producer for Apache Kafka and initializes the routines for sending events.
-func Init(ctx context.Context, brokerUrls []string, clientID string, topic string) error {
+func Init(producer kafka.Producer) error {
 	mu.RLock()
 	if running {
 		mu.RUnlock()
@@ -109,8 +106,8 @@ func Init(ctx context.Context, brokerUrls []string, clientID string, topic strin
 	}
 	mu.RUnlock()
 
+	ctx := context.Background()
 	chEvent = make(chan *Event)
-	producer := kafka.New(brokerUrls, clientID).NewProducer(topic)
 	running = true
 	wg.Add(1)
 
@@ -119,7 +116,7 @@ func Init(ctx context.Context, brokerUrls []string, clientID string, topic strin
 
 		for event := range chEvent {
 			if err := producer.Publish(ctx, []byte(event.Host), event.toJSON()); err != nil {
-				log.Printf("eventlog.Send() \nError: %v\n", err.Error())
+				fmt.Fprintf(os.Stderr, "%s\n", err)
 			}
 		}
 
