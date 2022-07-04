@@ -24,8 +24,10 @@ func Test_Send(t *testing.T) {
 		t.Error(err)
 	}
 
-	event := New("localhost", "Test", "Object Not Found",
+	event := New("localhost", "Test", "Object Not Found", Warning,
 		"Could not find the requested object.")
+
+	t.Log(string(event.toJSON()))
 
 	if err = Send(event); err != nil {
 		t.Error(err)

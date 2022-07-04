@@ -12,6 +12,9 @@ import (
 	"strings"
 )
 
+// MimeType represents the mime type ("application/json", "text/plain", "image/jpeg", ...).
+type MimeType int
+
 const (
 	// MimeApplicationJSON represents the MimeType "application/json".
 	MimeApplicationJSON = iota
@@ -48,9 +51,6 @@ var mimeTypeText = map[MimeType]string{
 	MimeVideoMP4:               "video/mp4",
 	MimeTextPlain:              "text/plain",
 }
-
-// MimeType represents the mime type ("application/json", "text/plain", "image/jpeg", ...).
-type MimeType int
 
 // String return the name of the mimeType.
 func (m MimeType) String() string {
