@@ -10,5 +10,7 @@ Helper for services written in Golang.
 * Package httputil provides http utility methods.
 * Package kafka is a simple wrapper for the kafka-go segmentio library, providing tools for consuming and producing events.
 * Package middleware provides settings for CORS, GZIP and JWT token validation.
+* Package observability/event implements routines to produce event log for a topic in Apache Kafka.
+* Package observability/metric implements routines to collect metrics from localhost and send to a topic in Apache Kafka. The metrics collected are: "uptime", "os", "total memory", "memory used", "cpu count", "cpu user", "cpu system", "cpu idle" and "num goroutines".
 * Package util/hashutil provides utility functions to generate and validate hash.
  

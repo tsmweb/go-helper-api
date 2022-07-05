@@ -1,3 +1,17 @@
+/*
+Package metric implements routines to collect metrics from localhost and send to a topic
+in Apache Kafka. The metrics collected are: "uptime", "os", "total memory", "memory used",
+"cpu count", "cpu user", "cpu system", "cpu idle" and "num goroutines".
+
+Starts collecting and sending metrics:
+
+	producer := kafka.New([]string{"localhost:9094"}, "CLIENT_ID").NewProducer("TOPIC_NAME")
+	err := metric.Start("localhost", 10, producer)
+	if err != nil {
+		// ...
+	defer metric.Stop()
+*/
+
 package metric
 
 import (
@@ -19,7 +33,7 @@ import (
 type metric struct {
 	Host        string  `json:"host"`
 	Uptime      string  `json:"uptime"`
-	SO          string  `json:"so"`
+	OS          string  `json:"os"`
 	MemoryTotal uint64  `json:"memory_total"`
 	MemoryUsed  uint64  `json:"memory_used"`
 	CPUCount    int     `json:"cpu_count"`
@@ -62,7 +76,7 @@ func newMetric(host string) (*metric, error) {
 	m := &metric{
 		Host:        host,
 		Uptime:      _uptime.String(),
-		SO:          fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH),
+		OS:          fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH),
 		MemoryTotal: mem.Total,
 		MemoryUsed:  mem.Used,
 		CPUCount:    runtime.NumCPU(),
