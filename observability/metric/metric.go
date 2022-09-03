@@ -19,14 +19,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/mackerelio/go-osstat/cpu"
-	"github.com/mackerelio/go-osstat/memory"
-	"github.com/mackerelio/go-osstat/uptime"
-	"github.com/tsmweb/go-helper-api/kafka"
 	"os"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/mackerelio/go-osstat/cpu"
+	"github.com/mackerelio/go-osstat/memory"
+	"github.com/mackerelio/go-osstat/uptime"
+	"github.com/tsmweb/go-helper-api/kafka"
 )
 
 // metric structure represents a metric log.
@@ -84,7 +85,7 @@ func newMetric(host string) (*metric, error) {
 		CPUSystem:   cpuSystem,
 		CPUIdle:     cpuIdle,
 		Goroutines:  runtime.NumGoroutine(),
-		Timestamp:   time.Now().Format("2006-02-01 15:04:05"),
+		Timestamp:   time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	return m, nil

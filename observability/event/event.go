@@ -22,10 +22,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tsmweb/go-helper-api/kafka"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/tsmweb/go-helper-api/kafka"
 )
 
 // EventType represents the event type ("info", "debug", "warning", ...).
@@ -75,7 +76,7 @@ func New(host string, user string, title string, eventType EventType, detail str
 		Title:     title,
 		Type:      eventType.String(),
 		Detail:    detail,
-		Timestamp: time.Now().Format("2006-02-01 15:04:05"),
+		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 	}
 }
 

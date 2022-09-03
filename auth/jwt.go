@@ -1,6 +1,5 @@
 /*
 Package auth provides authentication and authorization methods using JSON Web Tokens.
-
 */
 package auth
 
@@ -56,7 +55,7 @@ func (j *_jwt) GenerateToken(payload map[string]interface{}, exp int) (string, e
 		"iat": time.Now().Unix(),
 	}
 
-	if payload == nil || len(payload) == 0 {
+	if len(payload) == 0 {
 		return "", fmt.Errorf("invalid payload")
 	}
 	for k, v := range payload {
@@ -66,7 +65,6 @@ func (j *_jwt) GenerateToken(payload map[string]interface{}, exp int) (string, e
 	token.Claims = mapClaims
 	tokenString, err := token.SignedString(j.privateKey)
 	if err != nil {
-		panic(err)
 		return "", err
 	}
 
