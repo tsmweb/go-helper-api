@@ -76,7 +76,7 @@ func New(host string, user string, title string, eventType EventType, detail str
 		Title:     title,
 		Type:      eventType.String(),
 		Detail:    detail,
-		Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+		Timestamp: time.Now().Format("2006-01-02T15:04:05-0700"), // yyyy-MM-dd'T'HH:mm:ssZ
 	}
 }
 

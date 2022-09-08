@@ -1,10 +1,11 @@
 package metric
 
 import (
-	"github.com/stretchr/testify/mock"
-	kafka "github.com/tsmweb/go-helper-api/observability/internal/mock"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/mock"
+	kafka "github.com/tsmweb/go-helper-api/observability/internal/mock"
 )
 
 func TestMetric_New(t *testing.T) {

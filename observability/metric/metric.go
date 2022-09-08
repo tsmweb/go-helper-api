@@ -85,7 +85,7 @@ func newMetric(host string) (*metric, error) {
 		CPUSystem:   cpuSystem,
 		CPUIdle:     cpuIdle,
 		Goroutines:  runtime.NumGoroutine(),
-		Timestamp:   time.Now().Format("2006-01-02 15:04:05"),
+		Timestamp:   time.Now().Format("2006-01-02T15:04:05-0700"), // yyyy-MM-dd'T'HH:mm:ssZ
 	}
 
 	return m, nil
