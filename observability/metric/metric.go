@@ -69,6 +69,9 @@ func newMetric(host string) (*metric, error) {
 		return nil, err
 	}
 
+	memTotal := uint64((mem.Total / 1024) / 1024) // MB
+	memUsed := uint64((mem.Used / 1024) / 1024)   // MB
+
 	cpuTotal := float64(cpuAfter.Total - cpuBefore.Total)
 	cpuUser := float64(cpuAfter.User-cpuBefore.User) / cpuTotal * 100
 	cpuSystem := float64(cpuAfter.System-cpuBefore.System) / cpuTotal * 100
@@ -78,8 +81,8 @@ func newMetric(host string) (*metric, error) {
 		Host:        host,
 		Uptime:      _uptime.String(),
 		OS:          fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH),
-		MemoryTotal: mem.Total,
-		MemoryUsed:  mem.Used,
+		MemoryTotal: memTotal,
+		MemoryUsed:  memUsed,
 		CPUCount:    runtime.NumCPU(),
 		CPUUser:     cpuUser,
 		CPUSystem:   cpuSystem,
