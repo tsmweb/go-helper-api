@@ -1,6 +1,6 @@
 /*
 Package executor provides an implementation of the Executor to perform background
-processing, limiting resource consumption when executing a collection of jobs.
+processing, limiting resource consumption when executing a collection of tasks.
 
 Executor example:
 
@@ -12,10 +12,10 @@ Executor example:
 		err := exe.Schedule(func(ctx context.Context) {
 			select {
 			case <-ctx.Done():
-				log.Printf("[JOB] ID %d - stop \n", idx)
+				log.Printf("[TASK] ID %d - stop \n", idx)
 				return
 			default:
-				log.Printf("[JOB] ID %d \n", idx)
+				log.Printf("[TASK] ID %d \n", idx)
 				time.Sleep(time.Millisecond * 100)
 		})
 		if err != nil {
@@ -23,7 +23,6 @@ Executor example:
 			break
 		}
 	}
-
 */
 package executor
 
@@ -36,13 +35,13 @@ import (
 // Executor contains logic for goroutine execution.
 type Executor struct {
 	sema chan struct{}
-	wg sync.WaitGroup
+	wg   sync.WaitGroup
 
-	shutdown chan struct{}
-	mu sync.Mutex // guard terminated
+	shutdown   chan struct{}
+	mu         sync.Mutex // guard terminated
 	terminated bool
 
-	ctx context.Context
+	ctx        context.Context
 	cancelFunc context.CancelFunc
 }
 
@@ -55,21 +54,21 @@ func New(size int) *Executor {
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	return &Executor{
-		sema: make(chan struct{}, size),
-		shutdown: make(chan struct{}),
+		sema:       make(chan struct{}, size),
+		shutdown:   make(chan struct{}),
 		terminated: false,
-		ctx: ctx,
+		ctx:        ctx,
 		cancelFunc: cancelFunc,
 	}
 }
 
 // Schedule schedules the work to be performed on the executors.
-func (e *Executor) Schedule(job func(ctx context.Context)) error {
+func (e *Executor) Schedule(task func(ctx context.Context)) error {
 	if e.IsTerminated() {
 		return errors.New("executor terminated")
 	}
 	e.sema <- struct{}{}
-	e.worker(job)
+	e.worker(task)
 	return nil
 }
 
@@ -80,7 +79,7 @@ func (e *Executor) Shutdown() {
 
 	if !e.terminated {
 		close(e.shutdown) // signal to shutdown workers and close the executor.
-		e.cancelFunc() // tells an operation to abandon its work.
+		e.cancelFunc()    // tells an operation to abandon its work.
 		e.terminated = true
 		e.wg.Wait()
 	}
@@ -96,7 +95,7 @@ func (e *Executor) IsTerminated() bool {
 	}
 }
 
-func (e *Executor) worker(job func(ctx context.Context)) {
+func (e *Executor) worker(task func(ctx context.Context)) {
 	done := make(chan struct{})
 	e.wg.Add(1)
 
@@ -104,11 +103,10 @@ func (e *Executor) worker(job func(ctx context.Context)) {
 		defer func() {
 			<-e.sema
 			e.wg.Done()
-			//log.Println("[EXECUTOR] done")
 		}()
 
 		done <- struct{}{}
-		job(e.ctx)
+		task(e.ctx)
 	}()
 
 	<-done

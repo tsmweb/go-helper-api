@@ -4,8 +4,9 @@ Helper for services written in Golang.
 ## Features
 * Package auth provides authentication and authorization methods using JSON Web Tokens.
 * Package cerror provides customized errors that represent status for HTTP responses and specific treatments.
-* Package concurrent/executor provides an implementation of the Executor to perform background processing, limiting resource consumption when executing a collection of jobs.
+* Package concurrent/executor provides an implementation of the Executor to perform background processing, limiting resource consumption when executing a collection of tasks.
 * Package concurrent/flow provides a Flow implementation to perform background processing and notify your subscribers through an Emitter.
+* Package concurrent/gopool provides an implementation of tools to reuse goroutine and limit resource consumption when running a collection of tasks.
 * Package ebus implements the event bus design pattern, being an alternative to component communication while maintaining loose coupling and separation of interests principles.  
 * Package httputil provides http utility methods.
 * Package kafka is a simple wrapper for the kafka-go segmentio library, providing tools for consuming and producing events.

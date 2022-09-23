@@ -8,18 +8,18 @@ import (
 )
 
 func TestExecutor_Schedule(t *testing.T) {
-	jobSize := 100
+	taskSize := 100
 
 	exe := New(10)
 	defer exe.Shutdown()
 
-	for i := 0; i < jobSize; i++ {
-		job := &PrintJob{
+	for i := 0; i < taskSize; i++ {
+		task := &PrintTask{
 			Index:    i,
 			Duration: time.Millisecond * 100,
 		}
 
-		err := exe.Schedule(job.Run())
+		err := exe.Schedule(task.Run())
 		if err != nil {
 			t.Log(err)
 			break
@@ -28,7 +28,7 @@ func TestExecutor_Schedule(t *testing.T) {
 }
 
 func TestExecutor_Shutdown(t *testing.T) {
-	jobSize := 20
+	taskSize := 20
 
 	exe := New(2)
 	defer exe.Shutdown()
@@ -39,13 +39,13 @@ func TestExecutor_Shutdown(t *testing.T) {
 		exe.Shutdown()
 	}()
 
-	for i := 0; i < jobSize; i++ {
-		job := &PrintJob{
+	for i := 0; i < taskSize; i++ {
+		task := &PrintTask{
 			Index:    i,
 			Duration: time.Millisecond * 500,
 		}
 
-		err := exe.Schedule(job.Run())
+		err := exe.Schedule(task.Run())
 		if err != nil {
 			t.Log(err)
 			break
@@ -53,19 +53,19 @@ func TestExecutor_Shutdown(t *testing.T) {
 	}
 }
 
-type PrintJob struct {
+type PrintTask struct {
 	Index    int
 	Duration time.Duration
 }
 
-func (p *PrintJob) Run() func(ctx context.Context) {
+func (p *PrintTask) Run() func(ctx context.Context) {
 	return func(ctx context.Context) {
 		select {
 		case <-ctx.Done():
-			log.Printf("[JOB] ID %d - stop \n", p.Index)
+			log.Printf("[TASK] ID %d - stop \n", p.Index)
 			return
 		default:
-			log.Printf("[JOB] ID %d \n", p.Index)
+			log.Printf("[TASK] ID %d \n", p.Index)
 			time.Sleep(p.Duration)
 		}
 	}
