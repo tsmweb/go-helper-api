@@ -9,15 +9,14 @@ import (
 
 func TestPool_Schedule(t *testing.T) {
 	workerSize := 4
-	queueSize := 10
+	queueSize := 1
 
-	pool := New(workerSize, queueSize)
-	defer pool.Shutdown()
+	ctx, stop := context.WithCancel(context.Background())
+	pool := New(ctx, workerSize, queueSize)
 
 	for i := 0; i < 100; i++ {
 		task := &PrintTask{
-			Index:    i,
-			Duration: time.Millisecond,
+			Index: i,
 		}
 
 		err := pool.Schedule(task.Run())
@@ -27,20 +26,20 @@ func TestPool_Schedule(t *testing.T) {
 		}
 	}
 
-	time.Sleep(time.Millisecond * 500)
+	stop()
+	pool.Wait()
 }
 
 func TestPool_ScheduleTimeout(t *testing.T) {
 	workerSize := 4
-	queueSize := 10
+	queueSize := 1
 
-	pool := New(workerSize, queueSize)
-	defer pool.Shutdown()
+	ctx, stop := context.WithCancel(context.Background())
+	pool := New(ctx, workerSize, queueSize)
 
 	for i := 0; i < 100; i++ {
 		task := &PrintTask{
-			Index:    i,
-			Duration: time.Millisecond,
+			Index: i,
 		}
 
 		err := pool.ScheduleTimeout(time.Millisecond, task.Run())
@@ -59,12 +58,12 @@ func TestPool_ScheduleTimeout(t *testing.T) {
 		}
 	}
 
-	time.Sleep(time.Millisecond * 500)
+	stop()
+	pool.Wait()
 }
 
 type PrintTask struct {
-	Index    int
-	Duration time.Duration
+	Index int
 }
 
 func (p *PrintTask) Run() func(ctx context.Context) {
@@ -75,7 +74,6 @@ func (p *PrintTask) Run() func(ctx context.Context) {
 			return
 		default:
 			log.Printf("[TASK] ID %d \n", p.Index)
-			time.Sleep(p.Duration)
 		}
 	}
 }
