@@ -34,7 +34,7 @@ func TestJWT_ExtractToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := makeRequest(token)
+	req, err := makeHeaderRequest(token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestJWT_GetDataToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := makeRequest(token)
+	req, err := makeHeaderRequest(token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,12 +87,57 @@ func TestJWT_GetDataToken(t *testing.T) {
 	t.Log(dir)
 }
 
-func makeRequest(token string) (*http.Request, error) {
+func TestJWT_GetDataToken_by_param(t *testing.T) {
+	payload := map[string]interface{}{
+		"id":    123456,
+		"admin": true,
+		"dir":   "user.test",
+	}
+	jwt := NewJWT(_pathPrivateKey, _pathPublicKey)
+	token, err := jwt.GenerateToken(payload, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := makeParamRequest(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	id, err := jwt.GetDataToken(req, "id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(id)
+
+	admin, err := jwt.GetDataToken(req, "admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(admin)
+
+	dir, err := jwt.GetDataToken(req, "dir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(dir)
+}
+
+func makeHeaderRequest(token string) (*http.Request, error) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	return req, nil
+}
+
+func makeParamRequest(token string) (*http.Request, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("/?authorization=%s", token), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }

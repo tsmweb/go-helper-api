@@ -102,7 +102,12 @@ func (j *_jwt) GetDataToken(r *http.Request, key string) (interface{}, error) {
 
 // token extracts the token from an HTTP Request.
 func (j *_jwt) token(r *http.Request) (*jwt.Token, error) {
-	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, j.parseKeyFunc())
+	// token, err := request.ParseFromRequest(r, request.OAuth2Extractor, j.parseKeyFunc())
+	extractor := &request.MultiExtractor{
+		request.OAuth2Extractor,
+		request.ArgumentExtractor{"authorization"},
+	}
+	token, err := request.ParseFromRequest(r, extractor, j.parseKeyFunc())
 	if err != nil {
 		return nil, err
 	}
